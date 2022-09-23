@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Tinder Fast Messaging",
+  "version": "1.0",
+  "description": "Message templates for copy",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://tinder.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://tinder.com/*"],
+      "js": ["app.js"]
+    }
+  ]
+}
