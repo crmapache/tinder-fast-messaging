@@ -7,17 +7,23 @@ function init() {
     setStyles()
     
     const body = document.querySelector('body')
-    const menu = createElement(['menu'])
+    const menu = createElement(['menu', 'folded'])
+    const header = createElement(['header'])
     const optionsContainer = createElement(['options-container'])
     optionsContainer.id = 'mz-ext-options-container'
     
     body.append(menu)
+  
+    header.append(createDragBar(menu))
+    header.append(createToggleButton(menu))
     
-    menu.append(createDragBar(menu))
+    menu.append(header)
     menu.append(createAddNewOptionElements(addOptionHandler))
     menu.append(optionsContainer)
     
     renderOptions(options)
+  
+    addCancelMatchEvent()
   }, 1000)
 }
 
@@ -152,6 +158,17 @@ function createDragBar(menu) {
   return dragBar
 }
 
+function createToggleButton(menu) {
+  const toggleButton = createElement(['toggle-button'])
+  
+  toggleButton.addEventListener('click', () => {
+    menu.classList.toggle('mz-ext-folded')
+    toggleButton.classList.toggle('mz-ext-active')
+  })
+  
+  return toggleButton
+}
+
 function createAddNewOptionElements(addOptionHandler) {
   const wrap = createElement(['input-block-wrap'])
   
@@ -187,6 +204,35 @@ function renderOptions(options) {
   }
 }
 
+function addCancelMatchEvent() {
+  window.document.addEventListener('keypress', (e) => {
+    if (e.key === 'd' && e.ctrlKey) {
+      const deleteButton = findByInnerText('button','Cancelar match')
+      
+      if (deleteButton) {
+        deleteButton.click()
+        
+        setTimeout(() => {
+          const confirmDeleteButton = findByInnerText('div', 'Sí, cancelar match')
+          confirmDeleteButton?.click()
+        }, 500)
+      }
+    }
+  })
+}
+
+function findByInnerText(tag, text) {
+  const tags = document.getElementsByTagName(tag);
+  
+  for (const currentTag of tags) {
+    if (currentTag.textContent === text) {
+      return currentTag
+    }
+  }
+  
+  return null
+}
+
 function setStyles() {
   const styles = `
     .mz-ext-menu {
@@ -198,6 +244,16 @@ function setStyles() {
       background: rgba(0, 0, 0, .9);
       border-radius: 10px;
       padding: 15px;
+      transition: opacity .2s;
+    }
+    
+    .mz-ext-menu.mz-ext-folded {
+      height: 48px;
+      opacity: 0.5;
+    }
+    
+    .mz-ext-header {
+      display: flex;
     }
     
     .mz-ext-option {
@@ -228,11 +284,27 @@ function setStyles() {
     .mz-ext-drag-bar {
       height: 18px;
       border-radius: 4px;
-      background-color: #fff;
       transition: box-shadow .2s;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       background: linear-gradient(45deg, #47a1ff, #32eaf0);
       box-shadow: inset 0px 0px 6px 1px #227186;
+      flex: 1 1 0;
+    }
+    
+    .mz-ext-toggle-button {
+      height: 18px;
+      width: 18px;
+      margin-left: 5px;
+      background: linear-gradient(45deg, #9f14ea, #c66df9);
+      border-radius: 4px;
+    }
+    
+    .mz-ext-toggle-button:hover {
+      cursor: pointer;
+    }
+    
+    .mz-ext-toggle-button.mz-ext-active {
+      background: linear-gradient(45deg, #c66df9, #9f14ea);
     }
     
     .mz-ext-drag-bar:hover {
