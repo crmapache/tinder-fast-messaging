@@ -34,7 +34,6 @@ function addOptionHandler(option) {
     options.push({
       id: Date.now(),
       value: option,
-      popularity: 0,
     })
   
     setOptions(options)
@@ -50,25 +49,19 @@ function setOptions(options) {
   return window.localStorage.setItem('options', JSON.stringify(options))
 }
 
-function sortOptions(options) {
-  return options.sort((a, b) => {
-    if (a.popularity < b.popularity) return 1
-    else if(a.popularity > b.popularity) return -1
-    return 0
-  })
-}
-
 function createElement(classes) {
   const el = document.createElement('div')
   
   for (const className of classes) {
-    el.classList.add(`mz-ext-${className}`)
+    if (className) {
+      el.classList.add(`mz-ext-${className}`)
+    }
   }
   
   return el
 }
 
-function createOption(option) {
+function createOption(option, isFirstOption, isLastOption) {
   let timer;
   
   const optionWrap = createElement(['option-wrap'])
@@ -101,6 +94,54 @@ function createOption(option) {
     }, 1000)
   })
   
+  const shiftButtonsWrap = createElement(['shift-buttons-wrap'])
+  
+  const shiftButtonUp = createElement(['shift-button', 'shift-button-up', isFirstOption ? 'disabled' : null])
+  shiftButtonUp.innerHTML = `<i class='bx bxs-chevron-up'></i>`
+  shiftButtonUp.addEventListener('click', () => {
+    if (isFirstOption) return
+    
+    const options = getOptions()
+  
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].id === option.id) {
+        const prevOption = {...options[i - 1]}
+        const currentOption = {...options[i]}
+        options[i] = prevOption
+        options[i - 1] = currentOption
+      
+        break
+      }
+    }
+  
+    setOptions(options)
+    renderOptions(options)
+  })
+  
+  const shiftButtonDown = createElement(['shift-button', 'shift-button-down', isLastOption ? 'disabled' : null])
+  shiftButtonDown.innerHTML = `<i class='bx bxs-chevron-down'></i>`
+  shiftButtonDown.addEventListener('click', () => {
+    if (isLastOption) return
+    
+    const options = getOptions()
+    
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].id === option.id) {
+        const nextOption = {...options[i + 1]}
+        const currentOption = {...options[i]}
+        options[i] = nextOption
+        options[i + 1] = currentOption
+        
+        break
+      }
+    }
+    
+    setOptions(options)
+    renderOptions(options)
+  })
+  
+  shiftButtonsWrap.append(shiftButtonUp, shiftButtonDown)
+  
   const deleteButton = createElement(['delete-button'])
   deleteButton.innerText = 'Delete'
   deleteButton.addEventListener('click', () => {
@@ -111,7 +152,7 @@ function createOption(option) {
     renderOptions(updatedOptions)
   })
   
-  optionWrap.append(optionElement, deleteButton)
+  optionWrap.append(optionElement, shiftButtonsWrap, deleteButton)
   
   return optionWrap
 }
@@ -160,6 +201,10 @@ function createDragBar(menu) {
 
 function createToggleButton(menu) {
   const toggleButton = createElement(['toggle-button'])
+  toggleButton.innerHTML = `
+    <i class='bx bxs-chevron-up'></i>
+    <i class='bx bxs-chevron-down'></i>
+  `
   
   toggleButton.addEventListener('click', () => {
     menu.classList.toggle('mz-ext-folded')
@@ -194,10 +239,8 @@ function renderOptions(options) {
   
   
   if (options.length > 0) {
-    const sortedOptions = sortOptions(options)
-    
-    for (const option of sortedOptions) {
-      container.append(createOption(option))
+    for (let i = 0; i < options.length; i++) {
+      container.append(createOption(options[i], i === 0, i === options.length - 1))
     }
   } else {
     container.innerText = 'There is no options'
@@ -248,7 +291,7 @@ function setStyles() {
     }
     
     .mz-ext-menu.mz-ext-folded {
-      height: 48px;
+      height: 56px;
       opacity: 0.5;
     }
     
@@ -282,7 +325,7 @@ function setStyles() {
     }
     
     .mz-ext-drag-bar {
-      height: 18px;
+      height: 26px;
       border-radius: 4px;
       transition: box-shadow .2s;
       margin-bottom: 15px;
@@ -292,11 +335,16 @@ function setStyles() {
     }
     
     .mz-ext-toggle-button {
-      height: 18px;
-      width: 18px;
+      height: 26px;
+      width: 40px;
       margin-left: 5px;
       background: linear-gradient(45deg, #9f14ea, #c66df9);
       border-radius: 4px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      color: #fff;
     }
     
     .mz-ext-toggle-button:hover {
@@ -306,6 +354,19 @@ function setStyles() {
     .mz-ext-toggle-button.mz-ext-active {
       background: linear-gradient(45deg, #c66df9, #9f14ea);
     }
+    
+    .mz-ext-toggle-button .bxs-chevron-up {
+      display: none;
+    }
+    
+    .mz-ext-toggle-button.mz-ext-active .bxs-chevron-up {
+      display: block;
+    }
+    
+    .mz-ext-toggle-button.mz-ext-active .bxs-chevron-down {
+      display: none;
+    }
+    
     
     .mz-ext-drag-bar:hover {
       cursor: pointer;
@@ -392,13 +453,65 @@ function setStyles() {
     }
     
     .mz-ext-delete-button:active {
-      cursor: poiner;
       box-shadow: inset 0px 0px 3px 1px #140404;
+    }
+    
+    .mz-ext-shift-buttons-wrap {
+      margin-left: 10px;
+      display: flex;
+      justify-content: stretch;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    .mz-ext-shift-button {
+      width: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      background: linear-gradient(45deg, #8bc34a, #00bcd4);
+      border-radius: 4px;
+      transition: all .2s;
+      color: #fff;
+      flex: 1 1 0;
+    }
+    
+    .mz-ext-shift-button:hover {
+      cursor: pointer;
+      box-shadow: inset 0px 0px 3px 1px #491111;
+    }
+    
+    .mz-ext-shift-button:active {
+      cursor: pointer;
+      box-shadow: inset 0px 0px 3px 1px #140404;
+    }
+    
+    .mz-ext-shift-button.mz-ext-disabled {
+      opacity: .3;
+    }
+    
+    .mz-ext-shift-button:hover.mz-ext-disabled {
+      cursor: default;
+      box-shadow: none;
+    }
+    
+    .mz-ext-shift-button:active.mz-ext-disabled {
+       cursor: default;
+      box-shadow: none;
+    }
+    
+    .mz-ext-shift-button-up {
+      margin-bottom: 5px;
     }
   `;
   
   const head = document.querySelector('head')
-  const style = document.createElement('style');
+  const style = document.createElement('style')
+  const link = document.createElement('link')
+  link.setAttribute('href', 'https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css')
+  link.setAttribute('rel', 'stylesheet')
+  
   style.innerText = styles
-  head.append(style)
+  head.append(style, link)
 }
